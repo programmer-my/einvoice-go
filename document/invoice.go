@@ -183,7 +183,7 @@ func UblInvoiceBuilder(doc InvoiceDocument) *ubl.UBL_Invoice {
 					CurrencyID: inv.Currency,
 				},
 				TaxCategory: ubl.CAC_TaxCategory{
-					ID:        "SST",
+					ID:        "T",
 					Percent:   "0",
 					TaxScheme: ubl.CAC_TaxScheme{ID: "VAT"},
 				},
@@ -198,9 +198,24 @@ func UblInvoiceBuilder(doc InvoiceDocument) *ubl.UBL_Invoice {
 					CurrencyID: inv.Currency,
 				},
 				TaxCategory: ubl.CAC_TaxCategory{
-					ID:        "GST",
+					ID:        "E",
 					Percent:   "0",
-					TaxScheme: ubl.CAC_TaxScheme{ID: "GST"},
+					TaxScheme: ubl.CAC_TaxScheme{ID: "VAT"},
+				},
+			},
+			{
+				TaxableAmount: ubl.CBC_TaxableAmount{
+					Value:      0,
+					CurrencyID: inv.Currency,
+				},
+				TaxAmount: ubl.CBC_TaxAmount{
+					Value:      0,
+					CurrencyID: inv.Currency,
+				},
+				TaxCategory: ubl.CAC_TaxCategory{
+					ID:        "O",
+					Percent:   "0",
+					TaxScheme: ubl.CAC_TaxScheme{ID: "VAT"},
 				},
 			},
 		},

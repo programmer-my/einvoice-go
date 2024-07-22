@@ -419,6 +419,8 @@ func (a *CBC_Amount) MarshalXML(e *xml.Encoder, s xml.StartElement) error {
 	return CurrencyMarshaler(m, e, s)
 }
 
+// Valid values for ID: T E O (aligned-ibrp-cl-01-my)
+
 type CAC_TaxCategory struct {
 	XMLName            xml.Name      `xml:"cac:TaxCategory"`
 	ID                 string        `xml:"cbc:ID"`                 // [1..1] Document level charge TAX category code - A coded identification of what TAX category applies to the document level charge.
@@ -646,6 +648,8 @@ type CAC_CommodityClassification struct {
 	XMLName                xml.Name `xml:"cac:CommodityClassification"`
 	ItemClassificationCode string   `xml:"cbc:ItemClassificationCode"` // [1..1] Item classification identifier - A code for classifying the item by its type or nature.
 }
+
+// Valid values for ID: T E O (aligned-ibrp-cl-01-my)
 
 type CAC_ClassifiedTaxCategory struct {
 	XMLName            xml.Name      `xml:"cac:ClassifiedTaxCategory"`
