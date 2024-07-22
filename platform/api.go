@@ -28,6 +28,9 @@ const GET_NOTIFICATIONS_ENDPOINT = "/api/v1.0/notifications/taxpayer"
 
 const VALIDATE_TIN_ENDPOINT = "/api/v1.0/taxpayer/validate/{tin}"
 const SUBMIT_DOCUMENT_ENDPOINT = "/api/v1.0/documentsubmissions/"
+const CANCEL_DOCUMENT_ENDPOINT = "/api/v1.0/documents/state/{UUID}/state"
+const REJECT_DOCUMENT_ENDPOINT = "/api/v1.0/documents/state/{UUID}/state"
+const GET_RECENT_DOCUMENTS_ENDPOINT = "/api/v1.0/documents/recent"
 
 type TinIdType string
 
@@ -510,6 +513,7 @@ type SubmitDocumentResponse struct {
 	SubmissionUID     string
 	AcceptedDocuments []AcceptedDocuments
 	RejectedDocuments []RejectedDocuments
+	common.StandardErrResponse
 }
 
 type AcceptedDocuments struct {
@@ -559,4 +563,386 @@ func (a *Api) SubmitDocument() (any, error) {
 	}
 
 	return &retval, nil
+}
+
+type CancelDocumentRequest struct {
+	DesiredStatus string `json:"status"` // required
+	Reason        string `json:"reason"` // required. max 300 chars
+}
+
+type CancelDocumentResponse struct {
+	UUID   string             `json:"uuid"`
+	Status string             `json:"status"`
+	Error  common.ErrResponse `json:"error"`
+}
+
+func (a *Api) CancelDocument(docUuid string, reason string) (*CancelDocumentResponse, error) {
+	endpointUrl := strings.ReplaceAll(CANCEL_DOCUMENT_ENDPOINT, "{UUID}", docUuid)
+
+	reqBody := CancelDocumentRequest{
+		DesiredStatus: "cancelled",
+		Reason:        reason,
+	}
+
+	b, err := json.Marshal(reqBody)
+	if err != nil {
+		return nil, err
+	}
+
+	httpReq, err := http.NewRequest(http.MethodPut, endpointUrl, bytes.NewBuffer(b))
+	if err != nil {
+		return nil, err
+	}
+
+	httpReq.Header.Add("Content-Type", "application/json")
+	httpReq.Header.Add("Accept", "application/json")
+
+	resp, err := http.DefaultClient.Do(httpReq)
+	if err != nil {
+		return nil, err
+	}
+
+	defer resp.Body.Close()
+
+	var retval CancelDocumentResponse
+
+	respBytes, err := io.ReadAll(resp.Body)
+	if err != nil {
+		return nil, err
+	}
+
+	if err := json.Unmarshal(respBytes, &retval); err != nil {
+		return nil, err
+	}
+
+	if resp.StatusCode == http.StatusOK {
+		// TODO: handle success
+		return &retval, nil
+	} else {
+		// TODO: handle error
+		return &retval, nil
+	}
+}
+
+type RejectDocumentRequest struct {
+	DesiredStatus string `json:"status"` // required
+	Reason        string `json:"reason"` // required. max 300 chars
+}
+
+type RejectDocumentResponse struct {
+	UUID   string             `json:"uuid"`
+	Status string             `json:"status"`
+	Error  common.ErrResponse `json:"error"`
+}
+
+func (a *Api) RejectDocument(docUuid string, reason string) (*RejectDocumentResponse, error) {
+	endpointUrl := strings.ReplaceAll(CANCEL_DOCUMENT_ENDPOINT, "{UUID}", docUuid)
+
+	reqBody := RejectDocumentRequest{
+		DesiredStatus: "rejected",
+		Reason:        reason,
+	}
+
+	b, err := json.Marshal(reqBody)
+	if err != nil {
+		return nil, err
+	}
+
+	httpReq, err := http.NewRequest(http.MethodPut, endpointUrl, bytes.NewBuffer(b))
+	if err != nil {
+		return nil, err
+	}
+
+	httpReq.Header.Add("Content-Type", "application/json")
+	httpReq.Header.Add("Accept", "application/json")
+
+	resp, err := http.DefaultClient.Do(httpReq)
+	if err != nil {
+		return nil, err
+	}
+
+	defer resp.Body.Close()
+
+	var retval RejectDocumentResponse
+
+	respBytes, err := io.ReadAll(resp.Body)
+	if err != nil {
+		return nil, err
+	}
+
+	if err := json.Unmarshal(respBytes, &retval); err != nil {
+		return nil, err
+	}
+
+	if resp.StatusCode == http.StatusOK {
+		// TODO: handle success
+		return &retval, nil
+	} else {
+		// TODO: handle error
+		return &retval, nil
+	}
+}
+
+type GetRecentDocumentsQuery struct {
+	pageNo             int64   // Optional: number of the page to retrieve. Typically this parameter value is derived from initial parameter less call when caller learns total amount of page of certain size 	3 	Optional
+	pageSize           int64   // Optional: number of the documents to retrieve per page. Page size cannot exceed system configured maximum page size for this API 	20 	Optional
+	submissionDateFrom *string // Optional: The start date and time when the document was submitted to the e-Invoice API, Time to be supplied in UTC timezone. Mandatory when ‘submissionDateTo’ is provided 	2022-11-25T01:59:10Z 	Optional
+	submissionDateTo   *string // Optional: The end date and time when the document was submitted to the e-Invoice API, Time to be supplied in UTC timezone. Mandatory when ‘submissionDateFrom’ is provided 	2022-12-22T23:59:59Z 	Optional
+	issueDateFrom      *string // Optional: The start date and time when the document was issued. Mandatory when ‘issueDateTo’ is provided 	2021-02-25T23:55:10Z 	Optional
+	issueDateTo        *string // Optional: The end date and time when the document was issued. Mandatory when ‘issueDateFrom’ is provided 	2021-03-10T01:59:10Z 	Optional
+	direction          *string // Optional: direction of the document. Possible values: (Sent, Received) 	Sent 	Optional
+	status             *string // Optional: status of the document. Possible values: (Valid, Invalid, Cancelled, Submitted) 	Valid 	Optional
+	documentType       *string // Optional: Document type code. 	01 	Optional
+	receiverId         *string // Optional: Document recipient identifier. Only can be used when ‘Direction’ filter is set to Sent. Possible values: (Business registration number, National ID(IC), Passport Number, Army ID) 	BRN example: 201901234567 - NRIC example: 770625015324 - Passport number example: A12345678 - Army number example: 551587706543 	Optional
+	receiverIdType     *string // Optional: Document recipient identifier type. Only can be used when ‘Direction’ filter is set to Sent. Possible values: (BRN, PASSPORT, NRIC, ARMY) This is mandatory in case the receiverId is provided 	PASSPORT 	Optional
+	issuerIdType       *string // Optional: Document issuer identifier type. Only can be used when ‘Direction’ filter is set to Received. Possible values: (BRN, PASSPORT, NRIC, ARMY) This is mandatory in case the issuerId is provided 	PASSPORT 	Optional
+	receiverTin        *string // Optional: Document recipient TIN. Only can be used when ‘Direction’ filter is set to Sent. 	C2584563200 	Optional
+	issuerTin          *string // Optional: Document issuer identifier. Only can be used when ‘Direction’ filter is set to Received. 	C2584563200 	Optional
+	issuerId           *string // Optional: Document issuer identifier. Only can be used when ‘Direction’ filter is set to Received. Possible values: (Business registration number, National ID(IC), Passport Number, Army ID)
+}
+
+type GetRecentDocumentsResponse struct {
+	UUID                  string             `json:"uuid"`                  // 	Unique document ID in e-Invoice 	42S512YACQBRSRHYKBXBTGQG22
+	SubmissionUid         string             `json:"submissionUID"`         // 	Unique ID of the submission that document was part of 	XYE60M8ENDWA7V9TKBXBTGQG10
+	LongId                string             `json:"longId"`                // 	Unique long temporary Id that can be used to query document data anonymously 	YQH73576FY9VR57B…
+	InternalId            string             `json:"internalId"`            // 	Internal ID used in submission for the document 	PZ-234-A
+	TypeName              string             `json:"typeName"`              // 	Unique name of the document type that can be used in submission of the documents. 	invoice
+	TypeVersionName       string             `json:"typeVersionName"`       // 	Name of the document type version within the document type that can be used in document submission to identify document type version being submitted 	1.0
+	IssuerTIN             string             `json:"issuerTin"`             // 	TIN of issuer 	C2584563200
+	IssuerName            string             `json:"issuerName"`            // 	Issuer company name 	AMS Setia Jaya Sdn. Bhd.
+	ReceiverId            string             `json:"receiverId"`            // 	Optional: receiver registration number (can be national ID or foreigner ID). 	BRN example: 201901234567 - NRIC example: 770625015324 - Passport number example: A12345678 - Army number example: 551587706543
+	ReceiverName          string             `json:"receiverName"`          // 	Optional: receiver name (can be company name or person’s name) 	AMS Setia Jaya Sdn. Bhd.
+	DateTimeIssued        string             `json:"dateTimeIssued"`        // DateTime 	The date and time when the document was issued. 	2015-02-13T13:15:00Z
+	DateTimeReceived      string             `json:"dateTimeReceived"`      // DateTime 	The date and time when the document was submitted. 	2015-02-13T14:20:00Z
+	DateTimeValidated     string             `json:"dateTimeValidated"`     // DateTime 	The date and time when the document passed all validations and moved to the valid state. 	2015-02-13T14:20:00Z
+	TotalSales            string             `json:"totalSales"`            // Decimal 	Total sales amount of the document in MYR. 	10.10
+	TotalDiscount         string             `json:"totalDiscount"`         // Decimal 	Total discount amount of the document in MYR. 	50.00
+	NetAmount             string             `json:"netAmount"`             // Decimal 	Total net amount of the document in MYR. 	100.70
+	Total                 string             `json:"total"`                 // Decimal 	Total amount of the document in MYR. 	124.09
+	Status                string             `json:"status"`                // 	Status of the document - Submitted, Valid, Invalid, Cancelled 	Valid
+	CancelDateTime        string             `json:"cancelDateTime"`        // Date 	Refer to the document cancellation that has been initiated by the taxpayer “issuer” of the document on the system, will be in UTC format 	2021-02-25T01:59:10Z
+	RejectRequestDateTime string             `json:"rejectRequestDateTime"` // 	Date 	Refer to the document rejection request that has been initiated by the taxpayer “receiver” of the document on the system, will be in UTC format 	2021-02-25T01:59:10Z
+	DocumentStatusReason  string             `json:"documentStatusReason"`  // 	Mandatory: Reason of the cancellation or rejection of the document. 	Examples of reasons: Wrong buyer details or Wrong invoice details or any other reasons as appropriate
+	CreatedByUserId       string             `json:"createdByUserId"`       // 	User created the document. Can be ERP ID or User Email C1XXXXXXXX00:9e21b10c-41c4-9323-c590-95abcb6e4e4d, general.ams@supplier.com
+	SupplierTIN           string             `json:"supplierTIN"`           // 	TIN of issuer 	C2584563200
+	SupplierName          string             `json:"supplierName"`          // 	Supplier company name 	AMS Setia Jaya Sdn. Bhd.
+	SubmissionChannel     string             `json:"submissionChannel"`     // 	Channel through which document was introduced into the system 	possible values: ERP, Invoicing Portal, InvoicingMobileApp
+	IntermediaryName      string             `json:"intermediaryName"`      // 	Intermediary company name 	AMS Setia Jaya Sdn. Bhd.
+	IntermediaryTIN       string             `json:"intermediaryTIN"`       // 	TIN of intermediary 	C2584563200
+	BuyerName             string             `json:"buyerName"`             // 	Buyer company name 	AMS Setia Jaya Sdn. Bhd.
+	BuyerTIN              string             `json:"buyerTIN"`              // 	Tin of buyer 	C2584563200
+	Metadata              RecentDocumentMeta `json:"metadata"`              // 	Information about the results retrieved or results matching the query 	See structure
+	common.StandardErrResponse
+}
+
+type RecentDocumentMeta struct {
+	TotalPages string `json:"totalPages"` // Number Total count of pages based on the supplied (or default) page size
+	TotalCount string `json:"totalCount"` // Number Total count of matching objects
+}
+
+func (a *Api) GetRecentDocuments(query *GetRecentDocumentsQuery) (*GetRecentDocumentsResponse, error) {
+	httpReq, err := buildGetRecentDocumentsRequest(query)
+	if err != nil {
+		return nil, err
+	}
+
+	resp, err := http.DefaultClient.Do(httpReq)
+	if err != nil {
+		return nil, err
+	}
+
+	defer resp.Body.Close()
+
+	var retval GetRecentDocumentsResponse
+	respBytes, err := io.ReadAll(resp.Body)
+	if err != nil {
+		return nil, err
+	}
+
+	if err := json.Unmarshal(respBytes, &retval); err != nil {
+		return nil, err
+	}
+
+	return &retval, nil
+}
+
+func buildGetRecentDocumentsRequest(query *GetRecentDocumentsQuery) (*http.Request, error) {
+	endpointUrl := GET_RECENT_DOCUMENTS_ENDPOINT
+
+	httpReq, err := http.NewRequest(http.MethodGet, endpointUrl, nil)
+	if err != nil {
+		return nil, err
+	}
+
+	queryParam := httpReq.URL.Query()
+
+	if query.pageNo > 0 {
+		queryParam.Add("pageNo", fmt.Sprintf("%d", query.pageNo))
+	}
+
+	if query.pageSize > 0 {
+		queryParam.Add("pageSize", fmt.Sprintf("%d", query.pageSize))
+	}
+
+	if query.submissionDateFrom != nil {
+		queryParam.Add("submissionDateFrom", *query.submissionDateFrom)
+	}
+
+	if query.submissionDateTo != nil {
+		queryParam.Add("submissionDateTo", *query.submissionDateTo)
+	}
+
+	if query.issueDateFrom != nil {
+		queryParam.Add("issueDateFrom", *query.issueDateFrom)
+	}
+
+	if query.issueDateTo != nil {
+		queryParam.Add("issueDateTo", *query.issueDateTo)
+	}
+
+	if query.direction != nil {
+		queryParam.Add("direction", *query.direction)
+	}
+
+	if query.status != nil {
+		queryParam.Add("status", *query.status)
+	}
+
+	if query.documentType != nil {
+		queryParam.Add("documentType", *query.documentType)
+	}
+
+	if query.receiverId != nil {
+		queryParam.Add("receiverId", *query.receiverId)
+	}
+
+	if query.receiverIdType != nil {
+		queryParam.Add("receiverIdType", *query.receiverIdType)
+	}
+
+	if query.issuerIdType != nil {
+		queryParam.Add("issuerIdType", *query.issuerIdType)
+	}
+
+	if query.receiverTin != nil {
+		queryParam.Add("receiverTin", *query.receiverTin)
+	}
+
+	if query.issuerTin != nil {
+		queryParam.Add("issuerTin", *query.issuerTin)
+	}
+
+	if query.issuerId != nil {
+		queryParam.Add("issuerId", *query.issuerId)
+	}
+
+	return httpReq, nil
+}
+
+const GET_SUBMISSION_ENDPOINT = "/api/v1.0/documentsubmissions/{submissionUid}"
+
+type GetSubmissionQuery struct {
+	PageNo   int64
+	PageSize int64
+}
+
+type GetSubmissionResponse struct {
+	SubmissionUid    string                      `json:"submissionUid"`    // String 	Unique document submission ID in e-Invoice 	HJSD135P2S7D8IU
+	DocumentCount    string                      `json:"documentCount"`    // Number 	Total count of documents in submission that were accepted for processing 	234
+	DateTimeReceived string                      `json:"dateTimeReceived"` // DateTime 	The date and time when the submission was received by e-Invoice. 	2015-02-13T14:20:10Z
+	OverallStatus    string                      `json:"overallStatus"`    // String 	Overall status of the batch processing. Values: in progress, valid, partially valid, invalid 	valid
+	DocumentSummary  []SubmissionDocumentSummary `json:"documentSummary"`  // Document Summary[] 	List of the retrieved batch documents in current page. 	See structure.
+	common.StandardErrResponse
+}
+
+type SubmissionDocumentSummary struct {
+	UUID                  string `json:"uuid"`                  // String 	Unique document ID in e-Invoice 	F9D425P6DS7D8IU
+	SubmissionUid         string `json:"submissionUid"`         // String 	Unique ID of the submission the document was part of 	HJSD135P2S7D8IU
+	LongId                string `json:"longId"`                // String 	Unique long temporary Id that can be used to query document data anonymously. The long id will be returned only for valid documents 	LIJAF97HJJKH 8298KHADH0990 8570FDKK9S2LSIU HB377373
+	InternalId            string `json:"internalId"`            // String 	Internal ID used in submission for the document 	PZ-234-A
+	TypeName              string `json:"typeName"`              // String 	Unique name of the document type that can be used in submission of the documents. 	invoice
+	TypeVersionName       string `json:"typeVersionName"`       // String 	Name of the document type version within the document type that can be used in document submission to identify document type version being submitted 	1.0
+	IssuerTIN             string `json:"issuerTin"`             // String 	TIN of issuer 	C2584563200
+	IssuerName            string `json:"issuerName"`            // String 	Issuer company name 	AMS Setia Jaya Sdn. Bhd.
+	ReceiverId            string `json:"receiverId"`            // String 	Optional: receiver registration number (can be national ID or foreigner ID). 	201901234567
+	ReceiverName          string `json:"receiverName"`          // String 	Optional: receiver name (can be company name or person’s name) 	AMS Setia Jaya Sdn. Bhd.
+	DateTimeIssued        string `json:"dateTimeIssued"`        // DateTime 	The date and time when the document was issued in the UTC format. 	2015-02-13T13:15:10Z
+	DateTimeReceived      string `json:"dateTimeReceived"`      // DateTime 	The date and time when the document was submitted in the UTC format. 	2015-02-13T13:15:10Z
+	DateTimeValidated     string `json:"dateTimeValidated"`     // DateTime 	The date and time when the document passed all validations and moved to the valid state. 	2015-02-13T13:15:10Z
+	TotalExcludingTax     string `json:"totalExcludingTax"`     // Decimal 	Total sales amount of the document in MYR. 	10.10
+	TotalDiscount         string `json:"totalDiscount"`         // Decimal 	Total discount amount of the document in MYR. 	50.00
+	TotalNetAmount        string `json:"totalNetAmount"`        // Decimal 	Total net amount of the document in MYR. 	100.70
+	TotalPayableAmount    string `json:"totalPayableAmount"`    // Decimal 	Total amount of the document in MYR. 	124.09
+	Status                string `json:"status"`                // String 	Status of the document - Submitted, Valid, Invalid, Cancelled 	Valid
+	CancelDateTime        string `json:"cancelDateTime"`        // Date 	Refer to the document cancellation that has been initiated by the taxpayer ‘issuer’ of the document on the system, will be in UTC format 	2021-02-25T01:59:10Z
+	RejectRequestDateTime string `json:"rejectRequestDateTime"` // Date 	Refer to the document rejection request that has been initiated by the taxpayer ‘receiver’ of the document on the system, will be in UTC format 	2021-02-25T01:59:10Z
+	DocumentStatusReason  string `json:"documentStatusReason"`  // String 	Mandatory: Reason of the cancellation or rejection of the document. 	Examples of reasons: Wrong buyer details or Wrong invoice details or any other reasons as appropriate
+	CreatedByUserId       string `json:"createdByUserId"`       // String 	User created the document. Can be ERP ID or User Email 	1XXXXXXXX00:9e21b10c-41c4-9323-c590-95abcb6e4e4d general.ams@supplier.com
+}
+
+// This API allows caller to get details of a single submission to check
+// its processing status after initially submitting it
+// and getting back unique submission identifier.
+//
+// This API is available to submitter only as it might contain documents issued to multiple receivers.
+func (a *Api) GetSubmission(submissionUid string, query *GetSubmissionQuery) (*GetSubmissionResponse, error) {
+	endpointUrl := strings.ReplaceAll(GET_SUBMISSION_ENDPOINT, "{submissionUid}", submissionUid)
+
+	httpReq, err := http.NewRequest(http.MethodGet, endpointUrl, nil)
+	if err != nil {
+		return nil, err
+	}
+
+	if query != nil {
+		q := httpReq.URL.Query()
+
+		if query.PageNo > 0 {
+			q.Add("pageNo", fmt.Sprintf("%d", query.PageNo))
+		}
+
+		if query.PageSize > 0 {
+			q.Add("pageSize", fmt.Sprintf("%d", query.PageSize))
+		}
+	}
+
+	resp, err := http.DefaultClient.Do(httpReq)
+	if err != nil {
+		return nil, err
+	}
+
+	defer resp.Body.Close()
+
+	var retval GetSubmissionResponse
+
+	respBytes, err := io.ReadAll(resp.Body)
+	if err != nil {
+		return nil, err
+	}
+
+	if err := json.Unmarshal(respBytes, &retval); err != nil {
+		return nil, err
+	}
+
+	return &retval, nil
+}
+
+const GET_DOCUMENT_ENDPOINT = "/api/v1.0/documents/{uuid}/raw"
+
+func (a *Api) GetDocument(docUuid string) (any, error) {
+	// TODO
+	return nil, nil
+}
+
+const GET_DOCUMENT_DETAILS_ENDPOINT = "/api/v1.0/documents/{uuid}/details"
+
+func (a *Api) GetDocumentDetails(docUuid string) (any, error) {
+	// TODO
+	return nil, nil
+}
+
+const SEARCH_DOCUMENTS_ENDPOINT = "/api/v1.0/documents/search"
+
+func (a *Api) SearchDocuments() (any, error) {
+	// TODO
+	return nil, nil
 }
