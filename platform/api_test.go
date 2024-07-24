@@ -130,19 +130,19 @@ func TestUnmarshalGetDocumentTypesResponseSuccess(t *testing.T) {
 	successJson := `{
 		"result": [
 			{
-				"id": "45",
-				"invoiceTypeCode": "04",
+				"id": 45,
+				"invoiceTypeCode": 1,
 				"description": "Invoice",
 				"activeFrom": "2015-02-13T13:15:00Z",
 				"activeTo": "2027-03-01T00:00:00Z",
 				"documentTypeVersions": [
 					{
-						"id": "1",
+						"id": 3,
 						"name": "version 1",
 						"description": "document version 1",
 						"activeFrom": "2015-02-13T13:15:00Z",
 						"activeTo": "2027-03-01T00:00:00Z",
-						"versionNumber": "1.0",
+						"versionNumber": 1.1,
 						"status": "draft"
 					}
 				]
@@ -163,8 +163,8 @@ func TestUnmarshalGetDocumentTypesResponseSuccess(t *testing.T) {
 	}
 
 	docType := resp.Result[0]
-	expectedId := "45"
-	expectedInvoiceTypeCode := "04"
+	expectedId := 45
+	expectedInvoiceTypeCode := 1
 	expectedDescription := "Invoice"
 	expectedActiveFrom := "2015-02-13T13:15:00Z"
 	expectedActiveTo := "2027-03-01T00:00:00Z"
@@ -172,11 +172,11 @@ func TestUnmarshalGetDocumentTypesResponseSuccess(t *testing.T) {
 	expectedDocTypeVersionLen := 1
 
 	if docType.Id != expectedId {
-		t.Errorf("expected Id to be %s, got %s", expectedId, docType.Id)
+		t.Errorf("expected Id to be %d, got %d", expectedId, docType.Id)
 	}
 
 	if docType.InvoiceTypeCode != expectedInvoiceTypeCode {
-		t.Errorf("expected InvoiceTypeCode to be %s, got %s", expectedInvoiceTypeCode, docType.InvoiceTypeCode)
+		t.Errorf("expected InvoiceTypeCode to be %d, got %d", expectedInvoiceTypeCode, docType.InvoiceTypeCode)
 	}
 
 	if docType.Description != expectedDescription {
@@ -195,16 +195,16 @@ func TestUnmarshalGetDocumentTypesResponseSuccess(t *testing.T) {
 		t.Errorf("expected Versions length to be %d, got %d", expectedDocTypeVersionLen, len(docType.Versions))
 	}
 
-	expectedVersionId := "1"
+	expectedVersionId := 3
 	expectedVersionName := "version 1"
 	expectedVersionDescription := "document version 1"
 	expectedVersionActiveFrom := "2015-02-13T13:15:00Z"
 	expectedVersionActiveTo := "2027-03-01T00:00:00Z"
-	expectedVersionVersionNumber := "1.0"
+	expectedVersionVersionNumber := float32(1.1)
 	expectedVersionStatus := "draft"
 
 	if docTypeVersion1.Id != expectedVersionId {
-		t.Errorf("expected version id to be %s, got %s", expectedVersionId, docTypeVersion1.Id)
+		t.Errorf("expected version id to be %d, got %d", expectedVersionId, docTypeVersion1.Id)
 	}
 
 	if docTypeVersion1.Name != expectedVersionName {
@@ -224,7 +224,7 @@ func TestUnmarshalGetDocumentTypesResponseSuccess(t *testing.T) {
 	}
 
 	if docTypeVersion1.VersionNumber != expectedVersionVersionNumber {
-		t.Errorf("expected version number to be %s, got %s", expectedVersionVersionNumber, docTypeVersion1.VersionNumber)
+		t.Errorf("expected version number to be %.2f, got %.2f", expectedVersionVersionNumber, docTypeVersion1.VersionNumber)
 	}
 
 	if docTypeVersion1.Status != expectedVersionStatus {

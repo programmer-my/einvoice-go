@@ -82,6 +82,7 @@ type IntermLoginResponse struct {
 type Api struct {
 	clientId     string
 	clientSecret string
+	AccessToken  string
 }
 
 func NewApi(clientId string, clientSecret string) *Api {
@@ -117,8 +118,6 @@ func (a *Api) DoTaxPayerLogin(req *TaxPayerLoginRequest) (interface{}, error) {
 
 	defer resp.Body.Close()
 
-	fmt.Printf("%+v\n", resp.Header)
-
 	if resp.StatusCode == 400 {
 		// { "statusCode": 400, "message": "Bad Request" }
 		// or {"error":"invalid_request"}
@@ -130,8 +129,6 @@ func (a *Api) DoTaxPayerLogin(req *TaxPayerLoginRequest) (interface{}, error) {
 		if err != nil {
 			return nil, err
 		}
-
-		fmt.Printf("%s\n", string(respBytes))
 
 		err = json.Unmarshal(respBytes, &retval)
 		if err != nil {
@@ -178,7 +175,7 @@ func (a *Api) DoIntemediarySystemLogin(req *IntermLoginRequest) (*IntermLoginRes
 
 		b, err := io.ReadAll(resp.Body)
 		if err != nil {
-			fmt.Printf("error: %s", err)
+			return nil, err
 		}
 
 		if err := json.Unmarshal(b, &retval); err != nil {
@@ -192,18 +189,18 @@ func (a *Api) DoIntemediarySystemLogin(req *IntermLoginRequest) (*IntermLoginRes
 }
 
 type DocumentTypeVersion struct {
-	Id            string `json:"id"`
-	Name          string `json:"name"`
-	Description   string `json:"description"`
-	ActiveFrom    string `json:"activeFrom"` // TODO: timestamp
-	ActiveTo      string `json:"activeTo"`   // TODO: timestamp
-	VersionNumber string `json:"versionNumber"`
-	Status        string `json:"status"` // possible values: draft, published, deactivated
+	Id            int     `json:"id"`
+	Name          string  `json:"name"`
+	Description   string  `json:"description"`
+	ActiveFrom    string  `json:"activeFrom"`    // TODO: timestamp
+	ActiveTo      string  `json:"activeTo"`      // TODO: timestamp
+	VersionNumber float32 `json:"versionNumber"` // the API returns a float for some reason
+	Status        string  `json:"status"`        // possible values: draft, published, deactivated
 }
 
 type DocumentType struct {
-	Id              string                `json:"id"`
-	InvoiceTypeCode string                `json:"invoiceTypeCode"` // possible values: 1,2,3,4,11,12,13,14
+	Id              int                   `json:"id"`
+	InvoiceTypeCode int                   `json:"invoiceTypeCode"` // possible values: 1,2,3,4,11,12,13,14
 	Description     string                `json:"description"`
 	ActiveFrom      string                `json:"activeFrom"` // TODO: timestamp
 	ActiveTo        string                `json:"activeTo"`   // TODO: timestamp
@@ -215,13 +212,16 @@ type GetDocumentTypesResponse struct {
 	common.StandardErrResponse
 }
 
-func (a *Api) GetDocumentTypes() (any, error) {
+func (a *Api) GetDocumentTypes() (*GetDocumentTypesResponse, error) {
+
 	endpointUrl := common.SANDBOX_API_BASE_URL + "/api/v1.0/documenttypes"
 
 	httpReq, err := http.NewRequest(http.MethodGet, endpointUrl, nil)
 	if err != nil {
 		return nil, err
 	}
+
+	httpReq.Header.Add("Authorization", "Bearer "+a.AccessToken)
 
 	resp, err := http.DefaultClient.Do(httpReq)
 	if err != nil {
@@ -230,7 +230,18 @@ func (a *Api) GetDocumentTypes() (any, error) {
 
 	defer resp.Body.Close()
 
-	return resp, nil
+	respBody, err := io.ReadAll(resp.Body)
+	if err != nil {
+		return nil, err
+	}
+
+	var retval GetDocumentTypesResponse
+
+	if err := json.Unmarshal(respBody, &retval); err != nil {
+		return nil, err
+	}
+
+	return &retval, nil
 }
 
 type WorkflowParameter struct {
