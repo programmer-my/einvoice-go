@@ -2,16 +2,15 @@ package platform
 
 import (
 	"encoding/json"
-	"reflect"
 	"testing"
 )
 
 func TestUnmarshalTaxPayerSuccessLoginResp(t *testing.T) {
 	successJson := `{
-		"access_token": "123123",
-		"token_type": "Bearer",
-		"expires_in": "3600",
-		"scope": "InvoicingAPI"
+		"access_token":"somejwttoken",
+		"expires_in":3600,
+		"token_type":"Bearer",
+		"scope":"InvoicingAPI"
 	}`
 
 	var resp TaxPayerLoginResponse
@@ -21,32 +20,20 @@ func TestUnmarshalTaxPayerSuccessLoginResp(t *testing.T) {
 		t.Errorf("unexpected error when unmarshalling JSON: %s", err)
 	}
 
-	if resp.Success != true {
-		t.Errorf("expected success to be true")
+	if resp.AccessToken != "somejwttoken" {
+		t.Errorf("expected %s as access token, got %s", "123123", resp.AccessToken)
 	}
 
-	dataType := reflect.TypeOf(resp.Data)
-
-	if dataType != reflect.TypeOf(&TaxPayerLoginSuccessResp{}) {
-		t.Errorf("expected Data to be of type TaxPayerLoginSuccessResp, %T given", resp.Data)
+	if resp.TokenType != "Bearer" {
+		t.Errorf("expected %s as access token, got %s", "Bearer", resp.TokenType)
 	}
 
-	successData := resp.Data.(*TaxPayerLoginSuccessResp)
-
-	if successData.AccessToken != "123123" {
-		t.Errorf("expected %s as access token, got %s", "123123", successData.AccessToken)
+	if resp.ExpiresInSec != 3600 {
+		t.Errorf("expected %s as access token, got %d", "3600", resp.ExpiresInSec)
 	}
 
-	if successData.TokenType != "Bearer" {
-		t.Errorf("expected %s as access token, got %s", "Bearer", successData.TokenType)
-	}
-
-	if successData.ExpiresInSec != 3600 {
-		t.Errorf("expected %s as access token, got %d", "3600", successData.ExpiresInSec)
-	}
-
-	if successData.Scope != "InvoicingAPI" {
-		t.Errorf("expected %s as access token, got %s", "InvoicingAPI", successData.Scope)
+	if resp.Scope != "InvoicingAPI" {
+		t.Errorf("expected %s as access token, got %s", "InvoicingAPI", resp.Scope)
 	}
 
 }
@@ -65,35 +52,24 @@ func TestUnmarshalTaxPayerErrorResp(t *testing.T) {
 		t.Errorf("unexpected error when unmarshalling JSON: %s", err)
 	}
 
-	if resp.Success != false {
-		t.Errorf("expected success to be false")
-	}
-
-	dataType := reflect.TypeOf(resp.Data)
-	expectedDataType := reflect.TypeOf(&TaxPayerLoginErrorResp{})
-	if dataType != expectedDataType {
-		t.Errorf("expected Data to be of type %s, %T given", expectedDataType, resp.Data)
-	}
-
-	errorResp := resp.Data.(*TaxPayerLoginErrorResp)
 	expectedErrorMsg := "invalid_request"
 	expectedErrorDesc := "User blocked"
 
-	if errorResp.Error != expectedErrorMsg {
-		t.Errorf("expected ErrorMsg to be %s, got %s", expectedErrorMsg, errorResp.Error)
+	if resp.Error != expectedErrorMsg {
+		t.Errorf("expected ErrorMsg to be %s, got %s", expectedErrorMsg, resp.Error)
 	}
 
-	if errorResp.ErrorDescription != expectedErrorDesc {
-		t.Errorf("expected ErrorDescription to be %s, got %s", expectedErrorDesc, errorResp.ErrorDescription)
+	if resp.ErrorDescription != expectedErrorDesc {
+		t.Errorf("expected ErrorDescription to be %s, got %s", expectedErrorDesc, resp.ErrorDescription)
 	}
 }
 
 func TestUnmarshalIntermLoginSuccessResp(t *testing.T) {
 	successJson := `{
-		"access_token": "123123",
-		"token_type": "Bearer",
-		"expires_in": "3600",
-		"scope": "InvoicingAPI"
+		"access_token":"somejwttoken",
+		"expires_in":3600,
+		"token_type":"Bearer",
+		"scope":"InvoicingAPI"
 	}`
 
 	var resp IntermLoginResponse
@@ -103,36 +79,24 @@ func TestUnmarshalIntermLoginSuccessResp(t *testing.T) {
 		t.Errorf("unexpected error when unmarshalling JSON: %s", err)
 	}
 
-	if !resp.Success {
-		t.Errorf("expected Success to be true, got %t", resp.Success)
-	}
-
-	dataType := reflect.TypeOf(resp.Data)
-	expectedDataType := reflect.TypeOf(&IntermLoginSuccessResp{})
-
-	if dataType != expectedDataType {
-		t.Errorf("expected Data to be of type %s, got %s", expectedDataType, dataType)
-	}
-
-	respData := resp.Data.(*IntermLoginSuccessResp)
-	expectedAccessToken := "123123"
-	if respData.AccessToken != expectedAccessToken {
-		t.Errorf("expected access_token to be %s, got %s", expectedAccessToken, respData.AccessToken)
+	expectedAccessToken := "somejwttoken"
+	if resp.AccessToken != expectedAccessToken {
+		t.Errorf("expected access_token to be %s, got %s", expectedAccessToken, resp.AccessToken)
 	}
 
 	expectedTokenType := "Bearer"
-	if respData.TokenType != expectedTokenType {
-		t.Errorf("expected token_type to be %s, got %s", expectedTokenType, respData.TokenType)
+	if resp.TokenType != expectedTokenType {
+		t.Errorf("expected token_type to be %s, got %s", expectedTokenType, resp.TokenType)
 	}
 
 	expectedTokenScope := "InvoicingAPI"
-	if respData.Scope != expectedTokenScope {
-		t.Errorf("expected scope to be %s, got %s", expectedAccessToken, respData.Scope)
+	if resp.Scope != expectedTokenScope {
+		t.Errorf("expected scope to be %s, got %s", expectedAccessToken, resp.Scope)
 	}
 
 	expectedExpiresIn := 3600
-	if respData.ExpiresInSec != expectedExpiresIn {
-		t.Errorf("expected expires_in to be %d, got %d", expectedExpiresIn, respData.ExpiresInSec)
+	if resp.ExpiresInSec != expectedExpiresIn {
+		t.Errorf("expected expires_in to be %d, got %d", expectedExpiresIn, resp.ExpiresInSec)
 	}
 }
 
@@ -150,26 +114,15 @@ func TestUnmarshalIntermLoginErrorResp(t *testing.T) {
 		t.Errorf("unexpected error when unmarshalling JSON: %s", err)
 	}
 
-	if resp.Success != false {
-		t.Errorf("expected success to be false")
-	}
-
-	dataType := reflect.TypeOf(resp.Data)
-	expectedDataType := reflect.TypeOf(&IntermLoginErrorResp{})
-	if dataType != expectedDataType {
-		t.Errorf("expected Data to be of type %s, %T given", expectedDataType, resp.Data)
-	}
-
-	errorResp := resp.Data.(*IntermLoginErrorResp)
 	expectedErrorMsg := "invalid_request"
 	expectedErrorDesc := "User blocked"
 
-	if errorResp.Error != expectedErrorMsg {
-		t.Errorf("expected ErrorMsg to be %s, got %s", expectedErrorMsg, errorResp.Error)
+	if resp.Error != expectedErrorMsg {
+		t.Errorf("expected ErrorMsg to be %s, got %s", expectedErrorMsg, resp.Error)
 	}
 
-	if errorResp.ErrorDescription != expectedErrorDesc {
-		t.Errorf("expected ErrorDescription to be %s, got %s", expectedErrorDesc, errorResp.ErrorDescription)
+	if resp.ErrorDescription != expectedErrorDesc {
+		t.Errorf("expected ErrorDescription to be %s, got %s", expectedErrorDesc, resp.ErrorDescription)
 	}
 }
 

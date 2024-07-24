@@ -13,7 +13,6 @@ import (
 	"io"
 	"net/http"
 	"net/url"
-	"strconv"
 	"strings"
 
 	"github.com/programmer-my/einvoice-go/common"
@@ -49,73 +48,10 @@ type TaxPayerLoginRequest struct {
 }
 
 type TaxPayerLoginResponse struct {
-	Success bool
-	Data    interface{}
-}
-
-func (s *TaxPayerLoginResponse) UnmarshalJSON(b []byte) error {
-	m := make(map[string]any)
-
-	err := json.Unmarshal(b, &m)
-	if err != nil {
-		return err
-	}
-
-	successResp := &TaxPayerLoginSuccessResp{}
-	errorResp := &TaxPayerLoginErrorResp{}
-
-	accessToken, accessTokenFieldExists := m["access_token"]
-	if accessTokenFieldExists {
-		successResp.AccessToken = accessToken.(string)
-
-		if tokenType, ok := m["token_type"]; ok {
-			successResp.TokenType = tokenType.(string)
-		}
-
-		if expiresInSec, ok := m["expires_in"]; ok {
-			expiresInSecStr := expiresInSec.(string)
-			expiresInSecInt, err := strconv.ParseInt(expiresInSecStr, 10, 32)
-			if err != nil {
-				return fmt.Errorf("expected 'expires_in' to be numeric, got %s instead: %s", expiresInSecStr, err)
-			}
-			successResp.ExpiresInSec = int(expiresInSecInt)
-		}
-
-		if scope, ok := m["scope"]; ok {
-			successResp.Scope = scope.(string)
-		}
-
-		s.Success = true
-		s.Data = successResp
-
-		return nil
-	}
-
-	errorType, errorFieldExists := m["error"]
-	if errorFieldExists {
-		errorResp.Error = errorType.(string)
-
-		if errorDesc, ok := m["error_description"]; ok {
-			errorResp.ErrorDescription = errorDesc.(string)
-		}
-
-		s.Success = false
-		s.Data = errorResp
-
-		return nil
-	}
-
-	return fmt.Errorf("JSON unmarshalling error: field 'accessToken' or 'error' expected")
-}
-
-type TaxPayerLoginSuccessResp struct {
-	AccessToken  string `json:"access_token"`
-	TokenType    string `json:"token_type"`
-	ExpiresInSec int    `json:"expires_in,string"`
-	Scope        string `json:"scope"`
-}
-
-type TaxPayerLoginErrorResp struct {
+	AccessToken      string `json:"access_token"`
+	TokenType        string `json:"token_type"`
+	ExpiresInSec     int    `json:"expires_in"`
+	Scope            string `json:"scope"`
 	Error            string `json:"error"`
 	ErrorDescription string `json:"error_description"`
 }
@@ -135,135 +71,98 @@ type IntermLoginRequest struct {
 }
 
 type IntermLoginResponse struct {
-	Success bool
-	Data    interface{}
-}
-
-type IntermLoginSuccessResp struct {
-	AccessToken  string `json:"access_token"`
-	TokenType    string `json:"token_type"`
-	ExpiresInSec int    `json:"expires_in,string"`
-	Scope        string `json:"scope"`
-}
-
-type IntermLoginErrorResp struct {
+	AccessToken      string `json:"access_token"`
+	TokenType        string `json:"token_type"`
+	ExpiresInSec     int    `json:"expires_in"`
+	Scope            string `json:"scope"`
 	Error            string `json:"error"`
 	ErrorDescription string `json:"error_description"`
 }
 
-func (s *IntermLoginResponse) UnmarshalJSON(b []byte) error {
-	m := make(map[string]any)
-
-	err := json.Unmarshal(b, &m)
-	if err != nil {
-		return err
-	}
-
-	successResp := &IntermLoginSuccessResp{}
-	errorResp := &IntermLoginErrorResp{}
-
-	accessToken, accessTokenFieldExists := m["access_token"]
-	if accessTokenFieldExists {
-		successResp.AccessToken = accessToken.(string)
-
-		if tokenType, ok := m["token_type"]; ok {
-			successResp.TokenType = tokenType.(string)
-		}
-
-		if expiresInSec, ok := m["expires_in"]; ok {
-			expiresInSecStr := expiresInSec.(string)
-			expiresInSecInt, err := strconv.ParseInt(expiresInSecStr, 10, 32)
-			if err != nil {
-				return fmt.Errorf("expected 'expires_in' to be numeric, got %s instead: %s", expiresInSecStr, err)
-			}
-			successResp.ExpiresInSec = int(expiresInSecInt)
-		}
-
-		if scope, ok := m["scope"]; ok {
-			successResp.Scope = scope.(string)
-		}
-
-		s.Success = true
-		s.Data = successResp
-
-		return nil
-	}
-
-	errorType, errorFieldExists := m["error"]
-	if errorFieldExists {
-		errorResp.Error = errorType.(string)
-
-		if errorDesc, ok := m["error_description"]; ok {
-			errorResp.ErrorDescription = errorDesc.(string)
-		}
-
-		s.Success = false
-		s.Data = errorResp
-
-		return nil
-	}
-
-	return fmt.Errorf("JSON unmarshalling error: field 'accessToken' or 'error' expected")
+type Api struct {
+	clientId     string
+	clientSecret string
 }
 
-type Api struct {
+func NewApi(clientId string, clientSecret string) *Api {
+	return &Api{
+		clientId:     clientId,
+		clientSecret: clientSecret,
+	}
 }
 
 func (a *Api) DoTaxPayerLogin(req *TaxPayerLoginRequest) (interface{}, error) {
 	loginUrl, err := url.JoinPath(common.SANDBOX_IDENTITY_BASE_URL, TAXPAYER_LOGIN_ENDPOINT)
 	if err != nil {
+		return "", err
+	}
+
+	body := url.Values{}
+	body.Set("client_id", req.ClientID)
+	body.Set("client_secret", req.ClientSecret)
+	body.Set("grant_type", req.GrantType)
+	body.Set("scope", req.Scope)
+
+	httpReq, err := http.NewRequest(http.MethodPost, loginUrl, strings.NewReader(body.Encode()))
+	if err != nil {
 		return nil, err
 	}
 
-	body, err := json.Marshal(req)
-	if err != nil {
-		return nil, fmt.Errorf("JSON marshal failed: %s", err)
-	}
+	httpReq.Header.Add("Content-Type", "application/x-www-form-urlencoded")
 
-	resp, err := http.Post(loginUrl, "application/json", bytes.NewBuffer(body))
+	resp, err := http.DefaultClient.Do(httpReq)
 	if err != nil {
 		return nil, fmt.Errorf("request to API failed: %s", err)
 	}
 
 	defer resp.Body.Close()
 
+	fmt.Printf("%+v\n", resp.Header)
+
 	if resp.StatusCode == 400 {
+		// { "statusCode": 400, "message": "Bad Request" }
+		// or {"error":"invalid_request"}
 		return nil, errors.New("bad request. please check your client id and client secret")
+	} else if resp.StatusCode == http.StatusOK {
+		var retval TaxPayerLoginResponse
+
+		respBytes, err := io.ReadAll(resp.Body)
+		if err != nil {
+			return nil, err
+		}
+
+		fmt.Printf("%s\n", string(respBytes))
+
+		err = json.Unmarshal(respBytes, &retval)
+		if err != nil {
+			return nil, err
+		}
+
+		return &retval, nil
 	}
 
-	// fmt.Println("response Status:", resp.Status)
-	// fmt.Println("response Headers:", resp.Header)
-	// body, _ = io.ReadAll(resp.Body)
-	// fmt.Println("response Body:", string(body))
-
-	return string(body), nil
+	return nil, fmt.Errorf("unexpected HTTP status code %d", resp.StatusCode)
 }
 
-func (a *Api) DoIntemediarySystemLogin(req *IntermLoginRequest) (interface{}, error) {
+func (a *Api) DoIntemediarySystemLogin(req *IntermLoginRequest) (*IntermLoginResponse, error) {
 	endpointUrl, err := url.JoinPath(common.SANDBOX_IDENTITY_BASE_URL, INTERM_LOGIN_ENDPOINT)
 	if err != nil {
 		return nil, err
 	}
 
-	httpBody := map[string]string{
-		"client_id":     req.ClientID,
-		"client_secret": req.ClientSecret,
-		"grant_type":    req.GrantType,
-		"scope":         req.Scope,
-	}
+	httpBody := url.Values{}
+	httpBody.Set("client_id", req.ClientID)
+	httpBody.Set("client_secret", req.ClientSecret)
+	httpBody.Set("grant_type", req.GrantType)
+	httpBody.Set("scope", req.Scope)
 
-	bodyBytes, err := json.Marshal(httpBody)
-	if err != nil {
-		return nil, err
-	}
-
-	httpReq, err := http.NewRequest(http.MethodPost, endpointUrl, bytes.NewBuffer(bodyBytes))
+	httpReq, err := http.NewRequest(http.MethodPost, endpointUrl, strings.NewReader(httpBody.Encode()))
 	if err != nil {
 		return nil, err
 	}
 
 	httpReq.Header.Add("onbehalfof", req.OnBehalfOf)
-	httpReq.Header.Add("Content-Type", "application/json")
+	httpReq.Header.Add("Content-Type", "application/x-www-form-urlencoded")
 
 	resp, err := http.DefaultClient.Do(httpReq)
 	if err != nil {
@@ -272,7 +171,24 @@ func (a *Api) DoIntemediarySystemLogin(req *IntermLoginRequest) (interface{}, er
 
 	defer resp.Body.Close()
 
-	return resp, nil
+	if resp.StatusCode == http.StatusBadRequest {
+		return nil, fmt.Errorf("bad request: please check your client ID and client secret")
+	} else if resp.StatusCode == http.StatusOK {
+		var retval IntermLoginResponse
+
+		b, err := io.ReadAll(resp.Body)
+		if err != nil {
+			fmt.Printf("error: %s", err)
+		}
+
+		if err := json.Unmarshal(b, &retval); err != nil {
+			return nil, err
+		}
+
+		return &retval, nil
+	}
+
+	return nil, fmt.Errorf("unexpected HTTP status code: %d", resp.StatusCode)
 }
 
 type DocumentTypeVersion struct {
