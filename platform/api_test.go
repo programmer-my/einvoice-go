@@ -2,6 +2,8 @@ package platform
 
 import (
 	"encoding/json"
+	"fmt"
+	"net/url"
 	"testing"
 )
 
@@ -514,5 +516,94 @@ func TestUnmarshalGetDocumentTypeVersionResponse(t *testing.T) {
 
 	if resp.XmlSchema != expectedXmlSchema {
 		t.Errorf("expected xmlSchema to be %s, got %s", expectedXmlSchema, resp.XmlSchema)
+	}
+}
+
+func TestBuildGetRecentDocumentsRequestEmpty(t *testing.T) {
+	query := GetRecentDocumentsQuery{}
+	req, err := buildGetRecentDocumentsRequest(&query)
+
+	if err != nil {
+		t.Errorf("unexpected error when building request: %s", err)
+	}
+
+	expectedQueryParams := ""
+
+	if req.URL.RawQuery != expectedQueryParams {
+		t.Errorf("expected query params to be '%s', got '%s'", expectedQueryParams, req.URL.RawQuery)
+	}
+}
+
+func TestBuildGetRecentDocumentsRequestFullDirectionSent(t *testing.T) {
+	pageNo := 1
+	pageSize := 10
+	submissionDateFrom := "2024-01-01"
+	submissionDateTo := "2024-02-01"
+	issueDateFrom := "2024-01-01"
+	issueDateTo := "2024-02-01"
+	direction := "Sent"
+	status := "Valid"
+	documentType := "1"
+	receiverId := "receiverIdValue"
+	receiverIdType := "receiverIdTypeValue"
+	issuerIdType := "issuerIdTypeValue"
+	receiverTin := "receiverTinValue"
+	issuerTin := "issuerTinValue"
+	issuerId := "issuerIdValue"
+
+	query := GetRecentDocumentsQuery{
+		PageNo:             1,
+		PageSize:           10,
+		SubmissionDateFrom: &submissionDateFrom,
+		SubmissionDateTo:   &submissionDateTo,
+		IssueDateFrom:      &issueDateFrom,
+		IssueDateTo:        &issueDateTo,
+		Direction:          &direction,
+		Status:             &status,
+		DocumentType:       &documentType,
+		ReceiverId:         &receiverId,
+		ReceiverIdType:     &receiverIdType,
+		IssuerIdType:       &issuerIdType,
+		ReceiverTin:        &receiverTin,
+		IssuerTin:          &issuerTin,
+		IssuerId:           &issuerId,
+	}
+	req, err := buildGetRecentDocumentsRequest(&query)
+
+	if err != nil {
+		t.Errorf("unexpected error when building request: %s", err)
+	}
+
+	parsed, err := url.ParseQuery(req.URL.RawQuery)
+	if err != nil {
+		t.Fatalf("unexpected error when parsing URL query: %s", err)
+	}
+
+	cases := []struct {
+		label    string
+		expected interface{}
+		actual   interface{}
+	}{
+		{label: "pageNo", expected: fmt.Sprintf("%d", pageNo), actual: parsed["pageNo"][0]},
+		{label: "pageSize", expected: fmt.Sprintf("%d", pageSize), actual: parsed["pageSize"][0]},
+		{label: "submissionDateFrom", expected: submissionDateFrom, actual: parsed["submissionDateFrom"][0]},
+		{label: "submissionDateTo", expected: submissionDateTo, actual: parsed["submissionDateTo"][0]},
+		{label: "issueDateFrom", expected: issueDateFrom, actual: parsed["issueDateFrom"][0]},
+		{label: "issueDateTo", expected: issueDateTo, actual: parsed["issueDateTo"][0]},
+		{label: "direction", expected: direction, actual: parsed["direction"][0]},
+		{label: "status", expected: status, actual: parsed["status"][0]},
+		{label: "documentType", expected: documentType, actual: parsed["documentType"][0]},
+		{label: "receiverId", expected: receiverId, actual: parsed["receiverId"][0]},
+		{label: "receiverIdType", expected: receiverIdType, actual: parsed["receiverIdType"][0]},
+		{label: "issuerIdType", expected: issuerIdType, actual: parsed["issuerIdType"][0]},
+		{label: "receiverTin", expected: receiverTin, actual: parsed["receiverTin"][0]},
+		{label: "issuerTin", expected: issuerTin, actual: parsed["issuerTin"][0]},
+		{label: "issuerId", expected: issuerId, actual: parsed["issuerId"][0]},
+	}
+
+	for _, test := range cases {
+		if test.expected != test.actual {
+			t.Errorf("expected %s to be %q, got %q", test.label, test.expected, test.actual)
+		}
 	}
 }

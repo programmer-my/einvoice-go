@@ -641,21 +641,21 @@ func (a *Api) RejectDocument(docUuid string, reason string) (*RejectDocumentResp
 }
 
 type GetRecentDocumentsQuery struct {
-	pageNo             int64   // Optional: number of the page to retrieve. Typically this parameter value is derived from initial parameter less call when caller learns total amount of page of certain size 	3 	Optional
-	pageSize           int64   // Optional: number of the documents to retrieve per page. Page size cannot exceed system configured maximum page size for this API 	20 	Optional
-	submissionDateFrom *string // Optional: The start date and time when the document was submitted to the e-Invoice API, Time to be supplied in UTC timezone. Mandatory when ‘submissionDateTo’ is provided 	2022-11-25T01:59:10Z 	Optional
-	submissionDateTo   *string // Optional: The end date and time when the document was submitted to the e-Invoice API, Time to be supplied in UTC timezone. Mandatory when ‘submissionDateFrom’ is provided 	2022-12-22T23:59:59Z 	Optional
-	issueDateFrom      *string // Optional: The start date and time when the document was issued. Mandatory when ‘issueDateTo’ is provided 	2021-02-25T23:55:10Z 	Optional
-	issueDateTo        *string // Optional: The end date and time when the document was issued. Mandatory when ‘issueDateFrom’ is provided 	2021-03-10T01:59:10Z 	Optional
-	direction          *string // Optional: direction of the document. Possible values: (Sent, Received) 	Sent 	Optional
-	status             *string // Optional: status of the document. Possible values: (Valid, Invalid, Cancelled, Submitted) 	Valid 	Optional
-	documentType       *string // Optional: Document type code. 	01 	Optional
-	receiverId         *string // Optional: Document recipient identifier. Only can be used when ‘Direction’ filter is set to Sent. Possible values: (Business registration number, National ID(IC), Passport Number, Army ID) 	BRN example: 201901234567 - NRIC example: 770625015324 - Passport number example: A12345678 - Army number example: 551587706543 	Optional
-	receiverIdType     *string // Optional: Document recipient identifier type. Only can be used when ‘Direction’ filter is set to Sent. Possible values: (BRN, PASSPORT, NRIC, ARMY) This is mandatory in case the receiverId is provided 	PASSPORT 	Optional
-	issuerIdType       *string // Optional: Document issuer identifier type. Only can be used when ‘Direction’ filter is set to Received. Possible values: (BRN, PASSPORT, NRIC, ARMY) This is mandatory in case the issuerId is provided 	PASSPORT 	Optional
-	receiverTin        *string // Optional: Document recipient TIN. Only can be used when ‘Direction’ filter is set to Sent. 	C2584563200 	Optional
-	issuerTin          *string // Optional: Document issuer identifier. Only can be used when ‘Direction’ filter is set to Received. 	C2584563200 	Optional
-	issuerId           *string // Optional: Document issuer identifier. Only can be used when ‘Direction’ filter is set to Received. Possible values: (Business registration number, National ID(IC), Passport Number, Army ID)
+	PageNo             int64   // Optional: number of the page to retrieve. Typically this parameter value is derived from initial parameter less call when caller learns total amount of page of certain size 	3 	Optional
+	PageSize           int64   // Optional: number of the documents to retrieve per page. Page size cannot exceed system configured maximum page size for this API 	20 	Optional
+	SubmissionDateFrom *string // Optional: The start date and time when the document was submitted to the e-Invoice API, Time to be supplied in UTC timezone. Mandatory when ‘submissionDateTo’ is provided 	2022-11-25T01:59:10Z 	Optional
+	SubmissionDateTo   *string // Optional: The end date and time when the document was submitted to the e-Invoice API, Time to be supplied in UTC timezone. Mandatory when ‘submissionDateFrom’ is provided 	2022-12-22T23:59:59Z 	Optional
+	IssueDateFrom      *string // Optional: The start date and time when the document was issued. Mandatory when ‘issueDateTo’ is provided 	2021-02-25T23:55:10Z 	Optional
+	IssueDateTo        *string // Optional: The end date and time when the document was issued. Mandatory when ‘issueDateFrom’ is provided 	2021-03-10T01:59:10Z 	Optional
+	Direction          *string // Optional: direction of the document. Possible values: (Sent, Received) 	Sent 	Optional
+	Status             *string // Optional: status of the document. Possible values: (Valid, Invalid, Cancelled, Submitted) 	Valid 	Optional
+	DocumentType       *string // Optional: Document type code. 	01 	Optional
+	ReceiverId         *string // Optional: Document recipient identifier. Only can be used when ‘Direction’ filter is set to Sent. Possible values: (Business registration number, National ID(IC), Passport Number, Army ID) 	BRN example: 201901234567 - NRIC example: 770625015324 - Passport number example: A12345678 - Army number example: 551587706543 	Optional
+	ReceiverIdType     *string // Optional: Document recipient identifier type. Only can be used when ‘Direction’ filter is set to Sent. Possible values: (BRN, PASSPORT, NRIC, ARMY) This is mandatory in case the receiverId is provided 	PASSPORT 	Optional
+	IssuerIdType       *string // Optional: Document issuer identifier type. Only can be used when ‘Direction’ filter is set to Received. Possible values: (BRN, PASSPORT, NRIC, ARMY) This is mandatory in case the issuerId is provided 	PASSPORT 	Optional
+	ReceiverTin        *string // Optional: Document recipient TIN. Only can be used when ‘Direction’ filter is set to Sent. 	C2584563200 	Optional
+	IssuerTin          *string // Optional: Document issuer identifier. Only can be used when ‘Direction’ filter is set to Received. 	C2584563200 	Optional
+	IssuerId           *string // Optional: Document issuer identifier. Only can be used when ‘Direction’ filter is set to Received. Possible values: (Business registration number, National ID(IC), Passport Number, Army ID)
 }
 
 type GetRecentDocumentsResponse struct {
@@ -724,7 +724,7 @@ func (a *Api) GetRecentDocuments(query *GetRecentDocumentsQuery) (*GetRecentDocu
 }
 
 func buildGetRecentDocumentsRequest(query *GetRecentDocumentsQuery) (*http.Request, error) {
-	endpointUrl := GET_RECENT_DOCUMENTS_ENDPOINT
+	endpointUrl := common.SANDBOX_API_BASE_URL + GET_RECENT_DOCUMENTS_ENDPOINT
 
 	httpReq, err := http.NewRequest(http.MethodGet, endpointUrl, nil)
 	if err != nil {
@@ -733,64 +733,64 @@ func buildGetRecentDocumentsRequest(query *GetRecentDocumentsQuery) (*http.Reque
 
 	queryParam := httpReq.URL.Query()
 
-	if query.pageNo > 0 {
-		queryParam.Add("pageNo", fmt.Sprintf("%d", query.pageNo))
+	if query.PageNo > 0 {
+		queryParam.Add("pageNo", fmt.Sprintf("%d", query.PageNo))
 	}
 
-	if query.pageSize > 0 {
-		queryParam.Add("pageSize", fmt.Sprintf("%d", query.pageSize))
+	if query.PageSize > 0 {
+		queryParam.Add("pageSize", fmt.Sprintf("%d", query.PageSize))
 	}
 
-	if query.submissionDateFrom != nil {
-		queryParam.Add("submissionDateFrom", *query.submissionDateFrom)
+	if query.SubmissionDateFrom != nil {
+		queryParam.Add("submissionDateFrom", *query.SubmissionDateFrom)
 	}
 
-	if query.submissionDateTo != nil {
-		queryParam.Add("submissionDateTo", *query.submissionDateTo)
+	if query.SubmissionDateTo != nil {
+		queryParam.Add("submissionDateTo", *query.SubmissionDateTo)
 	}
 
-	if query.issueDateFrom != nil {
-		queryParam.Add("issueDateFrom", *query.issueDateFrom)
+	if query.IssueDateFrom != nil {
+		queryParam.Add("issueDateFrom", *query.IssueDateFrom)
 	}
 
-	if query.issueDateTo != nil {
-		queryParam.Add("issueDateTo", *query.issueDateTo)
+	if query.IssueDateTo != nil {
+		queryParam.Add("issueDateTo", *query.IssueDateTo)
 	}
 
-	if query.direction != nil {
-		queryParam.Add("direction", *query.direction)
+	if query.Direction != nil {
+		queryParam.Add("direction", *query.Direction)
 	}
 
-	if query.status != nil {
-		queryParam.Add("status", *query.status)
+	if query.Status != nil {
+		queryParam.Add("status", *query.Status)
 	}
 
-	if query.documentType != nil {
-		queryParam.Add("documentType", *query.documentType)
+	if query.DocumentType != nil {
+		queryParam.Add("documentType", *query.DocumentType)
 	}
 
-	if query.receiverId != nil {
-		queryParam.Add("receiverId", *query.receiverId)
+	if query.ReceiverId != nil {
+		queryParam.Add("receiverId", *query.ReceiverId)
 	}
 
-	if query.receiverIdType != nil {
-		queryParam.Add("receiverIdType", *query.receiverIdType)
+	if query.ReceiverIdType != nil {
+		queryParam.Add("receiverIdType", *query.ReceiverIdType)
 	}
 
-	if query.issuerIdType != nil {
-		queryParam.Add("issuerIdType", *query.issuerIdType)
+	if query.IssuerIdType != nil {
+		queryParam.Add("issuerIdType", *query.IssuerIdType)
 	}
 
-	if query.receiverTin != nil {
-		queryParam.Add("receiverTin", *query.receiverTin)
+	if query.ReceiverTin != nil {
+		queryParam.Add("receiverTin", *query.ReceiverTin)
 	}
 
-	if query.issuerTin != nil {
-		queryParam.Add("issuerTin", *query.issuerTin)
+	if query.IssuerTin != nil {
+		queryParam.Add("issuerTin", *query.IssuerTin)
 	}
 
-	if query.issuerId != nil {
-		queryParam.Add("issuerId", *query.issuerId)
+	if query.IssuerId != nil {
+		queryParam.Add("issuerId", *query.IssuerId)
 	}
 
 	httpReq.URL.RawQuery = queryParam.Encode()
