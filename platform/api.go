@@ -429,9 +429,13 @@ func (a *Api) ValidateTIN(tin string, idType TinIdType, idValue string) (bool, e
 		return false, err
 	}
 
+	httpReq.Header.Add("Authorization", "Bearer "+a.AccessToken)
+
 	query := httpReq.URL.Query()
 	query.Add("idType", string(idType))
 	query.Add("idValue", idValue)
+
+	httpReq.URL.RawQuery = query.Encode()
 
 	resp, err := http.DefaultClient.Do(httpReq)
 	if err != nil {
@@ -448,7 +452,7 @@ func (a *Api) ValidateTIN(tin string, idType TinIdType, idValue string) (bool, e
 		return false, fmt.Errorf("bad request")
 	}
 
-	return false, fmt.Errorf("unexpected error code %d: ", resp.StatusCode)
+	return false, fmt.Errorf("unexpected error code %d", resp.StatusCode)
 }
 
 type Document struct {
