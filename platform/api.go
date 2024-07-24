@@ -245,7 +245,7 @@ func (a *Api) GetDocumentTypes() (*GetDocumentTypesResponse, error) {
 }
 
 type WorkflowParameter struct {
-	Id         string `json:"id"`
+	Id         int    `json:"id"`
 	Parameter  string `json:"parameter"`
 	Value      int    `json:"value"`
 	ActiveFrom string `json:"activeFrom"`         // TODO: timestamp
@@ -257,7 +257,7 @@ type GetDocumentTypeByIdResponse struct {
 	WorkflowParameters []WorkflowParameter
 }
 
-func (a *Api) GetDocumentTypeById(id string) (any, error) {
+func (a *Api) GetDocumentTypeById(id string) (*GetDocumentTypeByIdResponse, error) {
 	endpointUrl := common.SANDBOX_API_BASE_URL + strings.Replace(GET_DOCUMENT_TYPE_BY_ID_ENDPOINT, "{id}", id, 1)
 
 	httpReq, err := http.NewRequest(http.MethodGet, endpointUrl, nil)
@@ -265,6 +265,7 @@ func (a *Api) GetDocumentTypeById(id string) (any, error) {
 		return nil, err
 	}
 
+	httpReq.Header.Add("Authorization", "Bearer "+a.AccessToken)
 	httpReq.Header.Add("Content-Type", "application/json")
 
 	resp, err := http.DefaultClient.Do(httpReq)
@@ -274,23 +275,24 @@ func (a *Api) GetDocumentTypeById(id string) (any, error) {
 
 	defer resp.Body.Close()
 
-	if resp.StatusCode != http.StatusOK {
-		return nil, fmt.Errorf("request returned with status code %d", resp.StatusCode)
+	if resp.StatusCode == http.StatusOK {
+		respBytes, err := io.ReadAll(resp.Body)
+		if err != nil {
+			return nil, err
+		}
+
+		var retval GetDocumentTypeByIdResponse
+
+		if err = json.Unmarshal(respBytes, &retval); err != nil {
+			return nil, err
+		}
+
+		return &retval, nil
+	} else if resp.StatusCode == http.StatusNotFound {
+		return nil, fmt.Errorf("invalid id '%s'", id)
 	}
 
-	respBytes, err := io.ReadAll(resp.Body)
-	if err != nil {
-		return nil, err
-	}
-
-	var retval GetDocumentTypeByIdResponse
-
-	err = json.Unmarshal(respBytes, &retval)
-	if err != nil {
-		return nil, err
-	}
-
-	return &retval, nil
+	return nil, fmt.Errorf("unexpected HTTP status code %d", resp.StatusCode)
 }
 
 type GetDocumentTypeVersionResponse struct {

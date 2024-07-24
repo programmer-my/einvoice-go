@@ -336,3 +336,117 @@ func TestUnmarshalGetDocumentTypesResponseError(t *testing.T) {
 		t.Errorf("expected InnerError.InnerError to be %+v, got %+v", nil, innerError.InnerErrors)
 	}
 }
+
+func TestUnmarshalGetDocumentTypeByIdResponseSuccess(t *testing.T) {
+	jsonStr := `{
+		"id": 1,
+		"invoiceTypeCode": 1,
+		"description": "Invoice",
+		"activeFrom": "2024-05-02T10:34:11.15Z",
+		"activeTo": null,
+		"documentTypeVersions": [
+			{
+				"id": 1,
+				"name": "Version 1",
+				"description": "Version 1",
+				"activeFrom": "2024-04-26T17:47:49.2Z",
+				"activeTo": null,
+				"versionNumber": 1.0,
+				"status": "Published"
+			},
+			{
+				"id": 2,
+				"name": "Version 2",
+				"description": "Version 2",
+				"activeFrom": "2024-06-21T15:13:17.29Z",
+				"activeTo": null,
+				"versionNumber": 1.1,
+				"status": "Published"
+			}
+		],
+		"workflowParameters": [
+			{
+				"id": 1,
+				"parameter": "Submission",
+				"value": 80,
+				"activeFrom": "2024-03-14T04:59:24.076Z",
+				"activeTo": null
+			}
+		]
+	}`
+
+	var resp GetDocumentTypeByIdResponse
+
+	if err := json.Unmarshal([]byte(jsonStr), &resp); err != nil {
+		t.Fatalf("unexpected error when unmarshalling JSON: %s", err)
+	}
+
+	expectedId := 1
+	expectedInvoiceTypeCode := 1
+	expectedDescription := "Invoice"
+	expectedActiveFrom := "2024-05-02T10:34:11.15Z"
+	var expectedActiveTo string
+
+	if resp.Id != expectedId {
+		t.Errorf("expected id to be %d, got %d", expectedId, resp.Id)
+	}
+
+	if resp.InvoiceTypeCode != expectedInvoiceTypeCode {
+		t.Errorf("expected invoiceTypeCode to be %d, got %d", expectedInvoiceTypeCode, resp.InvoiceTypeCode)
+	}
+
+	if resp.Description != expectedDescription {
+		t.Errorf("expected description to be %s, got %s", expectedDescription, resp.Description)
+	}
+
+	if resp.ActiveFrom != expectedActiveFrom {
+		t.Errorf("expected activeFrom to be %s, got %s", expectedActiveFrom, resp.ActiveFrom)
+	}
+
+	if resp.ActiveTo != expectedActiveTo {
+		t.Errorf("expected activeTo to be %s, got %s", expectedActiveTo, resp.ActiveTo)
+	}
+
+	versions := resp.Versions
+	expectedVersionCount := 2
+
+	if len(versions) != expectedVersionCount {
+		t.Errorf("expected len(documentTypeVersions) to be %d, got %d", expectedVersionCount, len(versions))
+	}
+
+	// TODO: documentTypeVersions assertions
+
+	workflowParams := resp.WorkflowParameters
+	expectedWorkflowParamsCount := 1
+
+	if len(workflowParams) != expectedWorkflowParamsCount {
+		t.Errorf("expected len(workflowParameters) to be %d, got %d", expectedWorkflowParamsCount, len(workflowParams))
+	}
+
+	wfp := workflowParams[0]
+	expectedWfpId := 1
+	expectedWfpParameter := "Submission"
+	expectedWfpValue := 80
+	expectedWfpActiveFrom := "2024-03-14T04:59:24.076Z"
+	var expectedWfpActiveTo string
+
+	if wfp.Id != expectedWfpId {
+		t.Errorf("expected workflowParam.id to be %d, got %d", expectedWfpId, wfp.Id)
+	}
+
+	if wfp.Parameter != expectedWfpParameter {
+		t.Errorf("expected workflowParam.parameter to be %s, got %s", expectedWfpParameter, wfp.Parameter)
+	}
+
+	if wfp.Value != expectedWfpValue {
+		t.Errorf("expected workflowParam.value to be %d, got %d", expectedWfpValue, wfp.Value)
+	}
+
+	if wfp.ActiveFrom != expectedWfpActiveFrom {
+		t.Errorf("expected workflowParam.activeFrom to be %s, got %s", expectedWfpActiveFrom, wfp.ActiveFrom)
+	}
+
+	if wfp.ActiveTo != expectedWfpActiveTo {
+		t.Errorf("expected workflowParam.activeTo to be %s, got %s", expectedWfpActiveTo, wfp.ActiveTo)
+	}
+}
