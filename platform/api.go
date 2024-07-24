@@ -296,10 +296,10 @@ func (a *Api) GetDocumentTypeById(id string) (*GetDocumentTypeByIdResponse, erro
 }
 
 type GetDocumentTypeVersionResponse struct {
-	InvoiceTypeCode string
+	InvoiceTypeCode int
 	Name            string
 	Description     string
-	VersionNumber   string
+	VersionNumber   float32
 	Status          string // published, deactivated
 	ActiveFrom      string // TODO: timestamp
 	ActiveTo        string // TODO: timestamp
@@ -314,14 +314,38 @@ func (a *Api) GetDocumentTypeVersion(id string, version string) (any, error) {
 			"{vid}", version, 1,
 		)
 
-	resp, err := http.Post(endpointUrl, "application/json", nil)
+	httpReq, err := http.NewRequest(http.MethodGet, endpointUrl, nil)
+	if err != nil {
+		return nil, err
+	}
+
+	httpReq.Header.Add("Authorization", "Bearer "+a.AccessToken)
+
+	resp, err := http.DefaultClient.Do(httpReq)
 	if err != nil {
 		return nil, err
 	}
 
 	defer resp.Body.Close()
 
-	return resp, nil
+	respBody, err := io.ReadAll(resp.Body)
+	if err != nil {
+		return nil, err
+	}
+
+	if resp.StatusCode == http.StatusOK {
+		var retval GetDocumentTypeVersionResponse
+
+		if err := json.Unmarshal(respBody, &retval); err != nil {
+			return nil, err
+		}
+
+		return &retval, nil
+	} else if resp.StatusCode == http.StatusNotFound {
+		return nil, fmt.Errorf("document type id '%s' with vid '%s' not found", id, version)
+	}
+
+	return nil, fmt.Errorf("unexpected HTTP status code %d", resp.StatusCode)
 }
 
 type Notification struct {

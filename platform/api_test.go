@@ -450,3 +450,69 @@ func TestUnmarshalGetDocumentTypeByIdResponseSuccess(t *testing.T) {
 		t.Errorf("expected workflowParam.activeTo to be %s, got %s", expectedWfpActiveTo, wfp.ActiveTo)
 	}
 }
+
+func TestUnmarshalGetDocumentTypeVersionResponse(t *testing.T) {
+	jsonStr := `{
+		"invoiceTypeCode":4,
+		"name":"1.0",
+		"description":"Credit note version 1.0",
+		"versionNumber":1.0,
+		"status":"published",
+		"activeFrom":"2015-02-13T13:15:00Z",
+		"activeTo":"2027-03-01T00:00:00Z",
+		"jsonschema":"dummyValue1",
+		"xmlschema":"dummyValue2"
+	}`
+
+	var resp GetDocumentTypeVersionResponse
+
+	if err := json.Unmarshal([]byte(jsonStr), &resp); err != nil {
+		t.Fatalf("unexpected error when unmarshalling JSON: %s", err)
+	}
+
+	expectedInvoiceTypeCode := 4
+	expectedName := "1.0"
+	expectedDescription := "Credit note version 1.0"
+	expectedVersionNumber := float32(1.0)
+	expectedStatus := "published"
+	expectedActiveFrom := "2015-02-13T13:15:00Z"
+	expectedActiveTo := "2027-03-01T00:00:00Z"
+	expectedJsonSchema := "dummyValue1"
+	expectedXmlSchema := "dummyValue2"
+
+	if resp.InvoiceTypeCode != expectedInvoiceTypeCode {
+		t.Errorf("expected invoiceTypeCode to be %d, got %d", expectedInvoiceTypeCode, resp.InvoiceTypeCode)
+	}
+
+	if resp.Name != expectedName {
+		t.Errorf("expected name to be %s, got %s", expectedName, resp.Name)
+	}
+
+	if resp.Description != expectedDescription {
+		t.Errorf("expected description to be %s, got %s", expectedDescription, resp.Description)
+	}
+
+	if resp.VersionNumber != expectedVersionNumber {
+		t.Errorf("expected versionNumber to be %.2f, got %.2f", expectedVersionNumber, resp.VersionNumber)
+	}
+
+	if resp.Status != expectedStatus {
+		t.Errorf("expected status to be %s, got %s", expectedStatus, resp.Status)
+	}
+
+	if resp.ActiveFrom != expectedActiveFrom {
+		t.Errorf("expected activeFrom to be %s, got %s", expectedActiveFrom, resp.ActiveFrom)
+	}
+
+	if resp.ActiveTo != expectedActiveTo {
+		t.Errorf("expected activeTo to be %s, got %s", expectedActiveTo, resp.ActiveTo)
+	}
+
+	if resp.JsonSchema != expectedJsonSchema {
+		t.Errorf("expected jsonSchema to be %s, got %s", expectedJsonSchema, resp.JsonSchema)
+	}
+
+	if resp.XmlSchema != expectedXmlSchema {
+		t.Errorf("expected xmlSchema to be %s, got %s", expectedXmlSchema, resp.XmlSchema)
+	}
+}
