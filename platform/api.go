@@ -793,6 +793,8 @@ func buildGetRecentDocumentsRequest(query *GetRecentDocumentsQuery) (*http.Reque
 		queryParam.Add("issuerId", *query.issuerId)
 	}
 
+	httpReq.URL.RawQuery = queryParam.Encode()
+
 	return httpReq, nil
 }
 
